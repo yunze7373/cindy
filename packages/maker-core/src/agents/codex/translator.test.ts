@@ -252,6 +252,46 @@ describe('Codex assistant text streaming contract', () => {
   });
 });
 
+describe('translateItemNotification ghost_manual boundary', () => {
+  it('preserves a 64KB high-escape MCP envelope without truncation', async () => {
+    const sentinel = 'GHOST_MANUAL_TOOL_RESULT_ONLY_20260809';
+    const unit = '中文 "quote" \\ slash\n';
+    let content = `${sentinel}\n`;
+    while (
+      Buffer.byteLength(`${content}${unit}END_${sentinel}`, 'utf8') <=
+      64 * 1024
+    ) {
+      content += unit;
+    }
+    content += `END_${sentinel}`;
+    const wire = JSON.stringify({ ok: true, manual: [], content });
+    expect(Buffer.byteLength(wire, 'utf8')).toBeGreaterThan(64 * 1024);
+
+    const q = createAsyncQueue<AgentEvent>();
+    translateItemNotification(
+      'completed',
+      {
+        threadId: 'thread-manual',
+        turnId: 'turn-manual',
+        item: {
+          type: 'mcpToolCall',
+          id: 'manual-call',
+          server: 'cindy',
+          tool: 'ghost_manual',
+          status: 'completed',
+          result: { content: [{ type: 'text', text: wire }] },
+        },
+      },
+      q,
+      makeCtx(newCodexRuntimeState()),
+    );
+    const events = await collect(q);
+    const full = events.find((event) => event.type === 'tool_result_full');
+    expect(full).toMatchObject({ data: { fullText: wire }, source: 'codex' });
+    expect(JSON.parse((full!.data as { fullText: string }).fullText).content).toBe(content);
+  });
+});
+
 describe('translateAccountRateLimitsUpdated', () => {
   it('normalizes Codex 0.144 windowDurationMins before emitting account usage', async () => {
     const q = createAsyncQueue<AgentEvent>();

@@ -55,7 +55,11 @@ import {
 import { resetDraftWorkspaceTargets } from '@/state/newMakerDraft';
 import { ghostInstallErrorKey } from '@/cindy-brain/installErrorKey';
 import { confirmAndInstallGhost, pickAndUpdateGhost } from '@/cindy-brain/installFlow';
-import { GhostPermissionList, GhostUpdateReview } from '@/cindy-brain/GhostPermissionList';
+import {
+  GhostManualSummary,
+  GhostPermissionList,
+  GhostUpdateReview,
+} from '@/cindy-brain/GhostPermissionList';
 import { cn } from '@/lib/utils';
 import { AttentionDot } from '@/components/sidebar/AttentionDot';
 import {
@@ -807,7 +811,9 @@ export function GhostPluginPage() {
             from: installedGhost?.manifest.version ?? next.version,
             to: next.version,
           }),
-          content: <GhostUpdateReview diff={diff} />,
+          content: (
+            <GhostUpdateReview diff={diff} manualCount={next.manifest.manual?.items.length ?? 0} />
+          ),
           maxWidth: 520,
           confirmText: t('settings.ghosts.updateConfirm.confirm'),
           cancelText: t('settings.ghosts.updateConfirm.cancel'),
@@ -1161,9 +1167,15 @@ export function GhostPluginPage() {
                   : 'settings.ghosts.market.customInstallConfirmDescription',
               ),
           content: isUpdate ? (
-            <GhostUpdateReview diff={diff!} />
+            <GhostUpdateReview
+              diff={diff!}
+              manualCount={marketDetail.manifest.manual?.items.length ?? 0}
+            />
           ) : (
-            <GhostPermissionList items={ghostPermissionItems(marketDetail.manifest)} />
+            <div>
+              <GhostManualSummary count={marketDetail.manifest.manual?.items.length ?? 0} />
+              <GhostPermissionList items={ghostPermissionItems(marketDetail.manifest)} />
+            </div>
           ),
           maxWidth: 520,
           confirmText: isUpdate

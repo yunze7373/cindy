@@ -48,6 +48,65 @@ async function drain(queue: ReturnType<typeof createAsyncQueue<AgentEvent>>): Pr
 }
 
 describe('Claude Code translator tool output normalization', () => {
+  it('preserves a 64KB ghost_manual JSON envelope as an MCP tool result', async () => {
+    const sentinel = 'GHOST_MANUAL_TOOL_RESULT_ONLY_20260809';
+    const unit = '中文 "quote" \\ slash\n';
+    let content = `${sentinel}\n`;
+    while (
+      Buffer.byteLength(`${content}${unit}END_${sentinel}`, 'utf8') <=
+      64 * 1024
+    ) {
+      content += unit;
+    }
+    content += `END_${sentinel}`;
+    const wire = JSON.stringify({ ok: true, manual: [], content });
+    expect(Buffer.byteLength(content, 'utf8')).toBeLessThanOrEqual(64 * 1024);
+    expect(Buffer.byteLength(wire, 'utf8')).toBeGreaterThan(64 * 1024);
+
+    const queue = createAsyncQueue<AgentEvent>();
+    const ctx = createCtx();
+    translateSdkMessage(
+      {
+        type: 'assistant',
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              id: 'toolu_manual',
+              name: 'mcp__cindy__ghost_manual',
+              input: { ghost_id: 'manual-demo', path: 'ops' },
+            },
+          ],
+        },
+      },
+      queue,
+      ctx,
+    );
+    translateSdkMessage(
+      {
+        type: 'user',
+        message: {
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: 'toolu_manual', content: wire }],
+        },
+      },
+      queue,
+      ctx,
+    );
+    const events = await drain(queue);
+    const full = events.find((event) => event.type === 'tool_result_full');
+    expect(full).toMatchObject({
+      data: { fullText: wire },
+      source: 'claude-code',
+    });
+    expect(JSON.parse((full!.data as { fullText: string }).fullText)).toEqual({
+      ok: true,
+      manual: [],
+      content,
+    });
+  });
+
   it('strips terminal control sequences from Bash tool_result content', async () => {
     const queue = createAsyncQueue<AgentEvent>();
     const ctx = createCtx();

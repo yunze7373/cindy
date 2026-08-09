@@ -1357,6 +1357,17 @@
         "ko": "프로세스"
       },
       "note": "OS 进程语境(资源用量面板、浏览器 guest 进程、终端)。注意与 Thread→任务(消息流语境)区分:资源用量面板刻意不展示 OS 线程数,避免「线程」撞上 Thread 的既定裁决;若未来要展示,需为 OS thread 立同形异义条目再谈。"
+    },
+    {
+      "id": "plugin-manual",
+      "status": "proposed",
+      "en": "Manual",
+      "translations": {
+        "zh-CN": "手册",
+        "ja": "マニュアル",
+        "ko": "매뉴얼"
+      },
+      "note": "插件随包提供、由 ghost_manual 按需读取的渐进披露长文资料。它不是权限项，也不等同于已停止新增的 Agent Skill；先登记为 proposed，待插件作者与用户实际使用后再固化。"
     }
   ]
 }

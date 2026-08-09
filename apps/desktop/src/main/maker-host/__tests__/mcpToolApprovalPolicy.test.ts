@@ -12,6 +12,7 @@ describe('desktop Claude read-only allowlist', () => {
     expect(tools).toEqual(expect.arrayContaining([
       'mcp__cindy__ghost_list',
       'mcp__cindy__ghost_info',
+      'mcp__cindy__ghost_manual',
       'mcp__cindy__ghost_forge_guide',
       'mcp__cindy_helper__list_tools',
       'mcp__cindy_slack__slack_status',
@@ -41,6 +42,7 @@ describe('desktop Claude read-only allowlist', () => {
     expect(getDesktopClaudeReadOnlyAllowedTools()).toEqual([
       'mcp__cindy__ghost_list',
       'mcp__cindy__ghost_info',
+      'mcp__cindy__ghost_manual',
       'mcp__cindy__ghost_forge_guide',
       'mcp__cindy_browser__list_tools',
       'mcp__cindy_android__list_tools',
@@ -134,6 +136,9 @@ describe('desktop MCP approval policy', () => {
     expect(
       getDesktopMcpToolApprovalPolicy({ serverName: 'cindy', toolName: 'ghost_info' }),
     ).toBe('auto-approve');
+    expect(getDesktopMcpToolApprovalPolicy({ serverName: 'cindy', toolName: 'ghost_manual' })).toBe(
+      'auto-approve',
+    );
 
     // 同一个 server 的执行入口不跟着沾光。
     expect(

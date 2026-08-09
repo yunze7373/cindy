@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { WINDOW_NO_DRAG_STYLE } from '@/components/layout/windowDrag';
 import { Spinner } from '@/components/ui/spinner';
-import { GhostPermissionDiffView } from '@/cindy-brain/GhostPermissionList';
+import { GhostManualSummary, GhostPermissionDiffView } from '@/cindy-brain/GhostPermissionList';
 import { cn } from '@/lib/utils';
 import { GhostPluginIcon } from './GhostPluginIcon';
 import { isBatchFinished, type UpdateAllRow } from './lib/updateAllModel';
@@ -187,6 +187,7 @@ export function UpdateAllDialog({
                   {expanded && row.permissionDiff ? (
                     <div className="ml-9 mt-3 rounded-lg border-[0.5px] border-[var(--border-default)] bg-[var(--surface)] px-4 py-3">
                       <GhostPermissionDiffView diff={row.permissionDiff} />
+                      <GhostManualSummary count={row.expectedManifest?.manual?.items.length ?? 0} />
                       <div className="mt-3 flex items-center gap-2">
                         <button
                           type="button"

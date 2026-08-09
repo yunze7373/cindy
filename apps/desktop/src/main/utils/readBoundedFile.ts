@@ -33,6 +33,13 @@ export interface ReadBoundedFileOptions {
   containWithin?: string;
 }
 
+export interface BoundedFileRead {
+  /** 已打开同一 inode 中实际读到的字节。 */
+  bytes: Buffer;
+  /** 同一文件句柄在读取前校验过的字节长度。 */
+  expectedSize: number;
+}
+
 /** realpath 产物是否落在同为 realpath 产物的根内(含根本身)。 */
 function isWithinRoot(realFilePath: string, realRoot: string): boolean {
   if (realFilePath === realRoot) return true;
@@ -106,6 +113,19 @@ export async function readBoundedFileNoFollow(
   maxBytes: number,
   options?: ReadBoundedFileOptions,
 ): Promise<Buffer | null> {
+  const result = await readBoundedFileNoFollowWithSize(filePath, maxBytes, options);
+  return result?.bytes ?? null;
+}
+
+/**
+ * 与 readBoundedFileNoFollow 相同，但同时返回同一文件句柄校验到的原始长度。
+ * 需要拒绝并发截短的格式解析器应要求 bytes.length === expectedSize。
+ */
+export async function readBoundedFileNoFollowWithSize(
+  filePath: string,
+  maxBytes: number,
+  options?: ReadBoundedFileOptions,
+): Promise<BoundedFileRead | null> {
   const noFollow =
     options?.noFollowFlag !== undefined
       ? options.noFollowFlag
@@ -131,7 +151,8 @@ export async function readBoundedFileNoFollow(
     if (options?.containWithin !== undefined) {
       if (!(await verifyStillWithinRoot(stat, filePath, options.containWithin))) return null;
     }
-    return await readToLength(handle, Number(stat.size));
+    const expectedSize = Number(stat.size);
+    return { bytes: await readToLength(handle, expectedSize), expectedSize };
   } finally {
     await handle.close();
   }

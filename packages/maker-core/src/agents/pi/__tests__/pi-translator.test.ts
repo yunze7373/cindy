@@ -77,6 +77,37 @@ describe('pi translator', () => {
     ]);
   });
 
+  it('preserves a 64KB ghost_manual envelope only as tool_result data', () => {
+    const sentinel = 'GHOST_MANUAL_TOOL_RESULT_ONLY_20260809';
+    const unit = '中文 "quote" \\ slash\n';
+    let content = `${sentinel}\n`;
+    while (
+      Buffer.byteLength(`${content}${unit}END_${sentinel}`, 'utf8') <=
+      64 * 1024
+    ) {
+      content += unit;
+    }
+    content += `END_${sentinel}`;
+    const wire = JSON.stringify({ ok: true, manual: [], content });
+    expect(Buffer.byteLength(wire, 'utf8')).toBeGreaterThan(64 * 1024);
+
+    const ctx = createPiTranslateContext(noopLogger);
+    const { queue, events } = makeQueue();
+    translatePiEvent(
+      ev({
+        type: 'tool_execution_end',
+        toolCallId: 'manual-call',
+        toolName: 'ghost_manual',
+        result: { content: [{ type: 'text', text: wire }] },
+      }),
+      queue,
+      ctx,
+    );
+    const full = events.find((event) => event.type === 'tool_result_full');
+    expect(full).toMatchObject({ data: { fullText: wire }, source: 'pi' });
+    expect(JSON.parse((full!.data as { fullText: string }).fullText).content).toBe(content);
+  });
+
   it('maps compaction_end (threshold) → compact_boundary with token deltas + updates contextTokens', () => {
     const ctx = createPiTranslateContext(noopLogger);
     const { queue, events } = makeQueue();
